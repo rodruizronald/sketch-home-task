@@ -3,7 +3,7 @@ package router_test
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -316,7 +316,7 @@ func runRouterTests(t *testing.T, testTable []testEntry, handler http.Handler, t
 			if http.NoBody != resp.Body && tt.respContent != nil {
 				defer resp.Body.Close()
 
-				actualRawBody, err := ioutil.ReadAll(resp.Body)
+				actualRawBody, err := io.ReadAll(resp.Body)
 				a.NoError(err)
 
 				expectedRawBody, err := json.MarshalIndent(tt.respContent, "", "")
