@@ -19,7 +19,7 @@ type Router struct {
 	logError  bool
 }
 
-type handlerFunc func(vars map[string]string, body interface{}) (response interface{}, status int)
+type HandlerFunc func(vars map[string]string, body interface{}) (resp interface{}, status int)
 
 const (
 	MethodPost   string = "POST"
@@ -44,25 +44,25 @@ func NewRouter(validator *validator.Validate, logError bool) (r *Router) {
 	}
 }
 
-func (r *Router) POST(path string, body interface{}, handler handlerFunc) {
+func (r *Router) POST(path string, body interface{}, handler HandlerFunc) {
 	if reflect.ValueOf(body).Kind() != reflect.Ptr {
 		panic("body is not addressable")
 	}
 	r.handle(MethodPost, path, body, handler)
 }
 
-func (r *Router) PUT(path string, body interface{}, handler handlerFunc) {
+func (r *Router) PUT(path string, body interface{}, handler HandlerFunc) {
 	if reflect.ValueOf(body).Kind() != reflect.Ptr {
 		panic("body is not addressable")
 	}
 	r.handle(MethodPut, path, body, handler)
 }
 
-func (r *Router) GET(path string, handler handlerFunc) {
+func (r *Router) GET(path string, handler HandlerFunc) {
 	r.handle(MethodGet, path, nil, handler)
 }
 
-func (r *Router) DELETE(path string, handler handlerFunc) {
+func (r *Router) DELETE(path string, handler HandlerFunc) {
 	r.handle(MethodDelete, path, nil, handler)
 }
 
