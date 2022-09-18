@@ -1,4 +1,4 @@
-module github.com/sketch-demo
+module github.com/sketch-home-task
 
 go 1.19
 

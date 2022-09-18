@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/go-playground/validator"
-	"github.com/sketch-demo/src/pkg/router"
+	"github.com/sketch-home-task/src/pkg/router"
 	"github.com/stretchr/testify/assert"
 )
 
