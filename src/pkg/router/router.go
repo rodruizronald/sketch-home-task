@@ -91,19 +91,16 @@ func (r *Router) handle(method string, path string, body interface{}, handler Ha
 					return
 				}
 			}
-		} else if method == MethodPost || method == MethodPut {
-			r.writeError(w, nil, "request content is empty", http.StatusBadRequest)
-			return
 		}
 
-		response, status := handler(mux.Vars(req), body)
+		resp, status := handler(mux.Vars(req), body)
 
 		var contentType string
-		var responseStr string
+		var respStr string
 
-		switch v := response.(type) {
+		switch v := resp.(type) {
 		case string:
-			responseStr = v
+			respStr = v
 			contentType = "text/plain; charset=utf-8"
 		default:
 			responseBytes, err := json.MarshalIndent(v, "", "  ")
@@ -111,16 +108,16 @@ func (r *Router) handle(method string, path string, body interface{}, handler Ha
 				r.writeError(w, err, "failed to process respond content", http.StatusInternalServerError)
 				return
 			}
-			responseStr = string(responseBytes)
+			respStr = string(responseBytes)
 			contentType = "application/json; charset=utf-8"
 		}
 
-		contentLength := strconv.FormatInt(int64(len(responseStr)), 10)
+		contentLength := strconv.FormatInt(int64(len(respStr)), 10)
 
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("Content-Length", contentLength)
 		w.WriteHeader(status)
-		w.Write([]byte(responseStr))
+		w.Write([]byte(respStr))
 	}).Methods(method)
 }
 
