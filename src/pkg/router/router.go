@@ -66,9 +66,14 @@ func (r *Router) DELETE(path string, handler HandlerFunc) {
 	r.handle(MethodDelete, path, nil, handler)
 }
 
-func (r *Router) handle(method string, path string, body interface{}, handler handlerFunc) {
+func (r *Router) handle(method string, path string, body interface{}, handler HandlerFunc) {
 	r.muxRouter.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
-		if req.Body != nil {
+		if http.NoBody == req.Body && (method == MethodPost || method == MethodPut) {
+			r.writeError(w, nil, "request content is empty", http.StatusBadRequest)
+			return
+		}
+
+		if http.NoBody != req.Body {
 			defer req.Body.Close()
 
 			rawBody, err := ioutil.ReadAll(req.Body)
