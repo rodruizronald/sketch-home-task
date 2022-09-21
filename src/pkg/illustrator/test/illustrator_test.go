@@ -98,7 +98,7 @@ func TestIllustrator(t *testing.T) {
 					{
 						Coordinates: []int{0, 0},
 						Width:       6,
-						Height:      illustrator.MaxCanvasHeight + 1,
+						Height:      illustrator.CanvasMaxHeight + 1,
 						Fill:        &dollerRune,
 						Outline:     nil,
 					},
@@ -110,7 +110,7 @@ func TestIllustrator(t *testing.T) {
 		{
 			name: "Test illustrator with invalid canvas dimensions",
 			canvas: illustrator.CanvasModel{
-				Width:  illustrator.MaxCanvasWidth + 1,
+				Width:  illustrator.CanvasMaxWidth + 1,
 				Height: 7,
 				Drawings: []illustrator.DrawingModel{
 					{
@@ -168,7 +168,7 @@ func TestIllustrator(t *testing.T) {
 				Height: 7,
 				Drawings: []illustrator.DrawingModel{
 					{
-						Coordinates: []int{0, illustrator.MaxCanvasWidth + 1},
+						Coordinates: []int{0, illustrator.CanvasMaxWidth + 1},
 						Width:       4,
 						Height:      5,
 						Fill:        &dollerRune,
