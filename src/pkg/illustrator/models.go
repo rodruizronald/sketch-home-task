@@ -8,15 +8,12 @@ import (
 )
 
 type CanvasStorage interface {
-	Close()
+	Close() (err error)
 	FindByName(ctx context.Context, name string) (canvas *CanvasModel, err error)
 	Create(ctx context.Context, canvas *CanvasModel) (err error)
 	Update(ctx context.Context, canvas *CanvasModel) (err error)
 	Delete(ctx context.Context, name string) (err error)
 }
-
-// TODO: REMOVE VALIDATION FROM TAGS
-// validate name length lte = 15
 
 type CanvasModel struct {
 	Name     string       `json:"name"`
@@ -29,8 +26,8 @@ type DrawingModel struct {
 	Coordinates []int `json:"coordinates"`
 	Width       int   `json:"width"`
 	Height      int   `json:"height"`
-	Fill        *rune `json:"fill" validate:"omitempty,gte=32,lte=126"`
-	Outline     *rune `json:"outline" validate:"omitempty,gte=32,lte=126"`
+	Fill        *rune `json:"fill"`
+	Outline     *rune `json:"outline"`
 }
 
 type DrawingSlice []DrawingModel
