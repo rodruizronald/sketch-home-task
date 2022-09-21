@@ -10,7 +10,7 @@ import (
 
 type testEntry struct {
 	name           string
-	canvas         illustrator.Canvas
+	canvas         illustrator.CanvasModel
 	expectedCanvas string
 	validEntry     bool
 }
@@ -37,10 +37,10 @@ func TestIllustrator(t *testing.T) {
 		// Valid test cases
 		{
 			name: "Test illustrator with valid canvas",
-			canvas: illustrator.Canvas{
+			canvas: illustrator.CanvasModel{
 				Width:  15,
 				Height: 7,
-				Drawings: []illustrator.Drawing{
+				Drawings: []illustrator.DrawingModel{
 					{
 						Coordinates: []int{3, 5},
 						Width:       4,
@@ -91,10 +91,10 @@ func TestIllustrator(t *testing.T) {
 		// Invalid test cases
 		{
 			name: "Test illustrator with invalid drawing dimensions",
-			canvas: illustrator.Canvas{
+			canvas: illustrator.CanvasModel{
 				Width:  15,
 				Height: 7,
-				Drawings: []illustrator.Drawing{
+				Drawings: []illustrator.DrawingModel{
 					{
 						Coordinates: []int{0, 0},
 						Width:       6,
@@ -109,10 +109,10 @@ func TestIllustrator(t *testing.T) {
 		},
 		{
 			name: "Test illustrator with invalid canvas dimensions",
-			canvas: illustrator.Canvas{
+			canvas: illustrator.CanvasModel{
 				Width:  illustrator.MaxCanvasWidth + 1,
 				Height: 7,
-				Drawings: []illustrator.Drawing{
+				Drawings: []illustrator.DrawingModel{
 					{
 						Coordinates: []int{0, 0},
 						Width:       4,
@@ -127,10 +127,10 @@ func TestIllustrator(t *testing.T) {
 		},
 		{
 			name: "Test illustrator with invalid filler",
-			canvas: illustrator.Canvas{
+			canvas: illustrator.CanvasModel{
 				Width:  20,
 				Height: 7,
-				Drawings: []illustrator.Drawing{
+				Drawings: []illustrator.DrawingModel{
 					{
 						Coordinates: []int{0, 0},
 						Width:       4,
@@ -145,10 +145,10 @@ func TestIllustrator(t *testing.T) {
 		},
 		{
 			name: "Test illustrator with invalid number of drawing coordinates",
-			canvas: illustrator.Canvas{
+			canvas: illustrator.CanvasModel{
 				Width:  20,
 				Height: 7,
-				Drawings: []illustrator.Drawing{
+				Drawings: []illustrator.DrawingModel{
 					{
 						Coordinates: []int{0, 0, 1},
 						Width:       4,
@@ -163,10 +163,10 @@ func TestIllustrator(t *testing.T) {
 		},
 		{
 			name: "Test illustrator with invalid range of drawing coordinates",
-			canvas: illustrator.Canvas{
+			canvas: illustrator.CanvasModel{
 				Width:  20,
 				Height: 7,
-				Drawings: []illustrator.Drawing{
+				Drawings: []illustrator.DrawingModel{
 					{
 						Coordinates: []int{0, illustrator.MaxCanvasWidth + 1},
 						Width:       4,
