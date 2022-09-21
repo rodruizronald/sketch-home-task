@@ -6,8 +6,16 @@ import (
 	"github.com/go-playground/validator"
 )
 
-func DrawingValidation(sl validator.StructLevel) {
-	if drawing, ok := sl.Current().Interface().(Drawing); ok {
+// Max. resolution constraints
+// - Width max. 50 characters
+// - Height max. 100 characters
+const (
+	MaxCanvasWidth  int = 50
+	MaxCanvasHeight int = 100
+)
+
+func DrawingModelValidation(sl validator.StructLevel) {
+	if drawing, ok := sl.Current().Interface().(DrawingModel); ok {
 		var setFields int
 
 		// Validate filler - at least one set
@@ -46,8 +54,8 @@ func DrawingValidation(sl validator.StructLevel) {
 	}
 }
 
-func CanvasValidation(sl validator.StructLevel) {
-	if canvas, ok := sl.Current().Interface().(Canvas); ok {
+func CanvasModelValidation(sl validator.StructLevel) {
+	if canvas, ok := sl.Current().Interface().(CanvasModel); ok {
 		// Validate canvas dimensions
 		if canvas.Width > MaxCanvasWidth {
 			tag := fmt.Sprintf("canvas width max. value %d exceeded", MaxCanvasWidth)
@@ -61,6 +69,6 @@ func CanvasValidation(sl validator.StructLevel) {
 }
 
 func RegisterValidation(v *validator.Validate) {
-	v.RegisterStructValidation(DrawingValidation, Drawing{})
-	v.RegisterStructValidation(CanvasValidation, Canvas{})
+	v.RegisterStructValidation(DrawingModelValidation, DrawingModel{})
+	v.RegisterStructValidation(CanvasModelValidation, CanvasModel{})
 }
