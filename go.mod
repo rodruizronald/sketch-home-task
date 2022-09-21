@@ -3,8 +3,10 @@ module github.com/sketch-home-task
 go 1.19
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gorilla/mux v1.8.0
+	github.com/lib/pq v1.10.7
 	github.com/stretchr/testify v1.6.1
 )
 
