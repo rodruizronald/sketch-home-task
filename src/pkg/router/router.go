@@ -1,10 +1,13 @@
 package router
 
 import (
+	"context"
 	"encoding/json"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"strconv"
 
@@ -16,113 +19,154 @@ type Router struct {
 	http.Handler
 	muxRouter *mux.Router
 	validator *validator.Validate
-	logError  bool
 }
 
-type HandlerFunc func(vars map[string]string, body interface{}) (resp interface{}, status int)
+type HandlerRequest struct {
+	Context context.Context
+	Vars    map[string]string
+	Body    interface{}
+}
+
+type HandlerResponse struct {
+	Response    interface{}
+	ContentType ContentType
+	Status      int
+	Template    string
+}
+
+type HandlerFunc func(req *HandlerRequest) (resp *HandlerResponse)
+
+type ContentType int
 
 const (
-	MethodPost   string = "POST"
-	MethodPut    string = "PUT"
-	MethodGet    string = "GET"
-	MethodDelete string = "DELETE"
+	ContentTypeText ContentType = iota
+	ContentTypeHTML
+	ContentTypeJSON
 )
 
-func NewRouter(validator *validator.Validate, logError bool) (r *Router) {
+func NewRouter(validator *validator.Validate) (r *Router) {
 	muxRouter := mux.NewRouter()
 	muxSubrouter := muxRouter.Methods(
-		MethodPost,
-		MethodPut,
-		MethodGet,
-		MethodDelete).Subrouter()
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodGet,
+		http.MethodDelete).Subrouter()
 
 	return &Router{
 		Handler:   muxRouter,
 		muxRouter: muxSubrouter,
 		validator: validator,
-		logError:  logError,
 	}
 }
+
+// ----------------------- Request Handler Methods ----------------------- //
 
 func (r *Router) POST(path string, body interface{}, handler HandlerFunc) {
 	if reflect.ValueOf(body).Kind() != reflect.Ptr {
 		panic("body is not addressable")
 	}
-	r.handle(MethodPost, path, body, handler)
+	r.handle(http.MethodPost, path, body, handler)
 }
 
 func (r *Router) PUT(path string, body interface{}, handler HandlerFunc) {
 	if reflect.ValueOf(body).Kind() != reflect.Ptr {
 		panic("body is not addressable")
 	}
-	r.handle(MethodPut, path, body, handler)
+	r.handle(http.MethodPut, path, body, handler)
 }
 
 func (r *Router) GET(path string, handler HandlerFunc) {
-	r.handle(MethodGet, path, nil, handler)
+	r.handle(http.MethodGet, path, nil, handler)
 }
 
 func (r *Router) DELETE(path string, handler HandlerFunc) {
-	r.handle(MethodDelete, path, nil, handler)
+	r.handle(http.MethodDelete, path, nil, handler)
 }
+
+// ----------------------- Request Router ----------------------- //
 
 func (r *Router) handle(method string, path string, body interface{}, handler HandlerFunc) {
 	r.muxRouter.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
-		if http.NoBody == req.Body && (method == MethodPost || method == MethodPut) {
-			r.writeError(w, nil, "request content is empty", http.StatusBadRequest)
+		if http.NoBody == req.Body && (method == http.MethodPost || method == http.MethodPut) {
+			writeError(w, nil, "request content is empty", http.StatusBadRequest)
 			return
 		}
 
+		// Only JSON requests supported
 		if http.NoBody != req.Body {
 			defer req.Body.Close()
 
 			rawBody, err := ioutil.ReadAll(req.Body)
 			if err != nil {
-				r.writeError(w, err, "unable to read request content", http.StatusInternalServerError)
+				writeError(w, err, "unable to read request content", http.StatusInternalServerError)
 				return
 			}
 			if err = json.Unmarshal(rawBody, body); err != nil {
-				r.writeError(w, err, "failed to process request content", http.StatusBadRequest)
+				writeError(w, err, "failed to process request content", http.StatusBadRequest)
 				return
 			}
 			if r.validator != nil {
 				if err = r.validator.Struct(body); err != nil {
-					r.writeError(w, err, "request content is invalid", http.StatusBadRequest)
+					writeError(w, err, "request content is invalid", http.StatusBadRequest)
 					return
 				}
 			}
 		}
 
-		resp, status := handler(mux.Vars(req), body)
-
-		var contentType string
-		var respStr string
-
-		switch v := resp.(type) {
-		case string:
-			respStr = v
-			contentType = "text/plain; charset=utf-8"
-		default:
-			responseBytes, err := json.MarshalIndent(v, "", "  ")
-			if err != nil {
-				r.writeError(w, err, "failed to process respond content", http.StatusInternalServerError)
-				return
-			}
-			respStr = string(responseBytes)
-			contentType = "application/json; charset=utf-8"
+		handlerReq := &HandlerRequest{
+			Context: req.Context(),
+			Vars:    mux.Vars(req),
+			Body:    body,
 		}
 
-		contentLength := strconv.FormatInt(int64(len(respStr)), 10)
-
-		w.Header().Set("Content-Type", contentType)
-		w.Header().Set("Content-Length", contentLength)
-		w.WriteHeader(status)
-		w.Write([]byte(respStr))
+		handler(handlerReq).writeResponse(w)
 	}).Methods(method)
 }
 
-func (r *Router) writeError(w http.ResponseWriter, internalErr error, httpErr string, status int) {
-	if r.logError && internalErr != nil {
+// ----------------------- Response Writer ----------------------- //
+
+func (h *HandlerResponse) writeResponse(w http.ResponseWriter) {
+	var resp string
+	var contentType string
+
+	switch h.ContentType {
+	case ContentTypeText:
+		resp = h.Response.(string)
+		contentType = "text/plain; charset=utf-8"
+	case ContentTypeJSON:
+		respBytes, err := json.MarshalIndent(h.Response, "", "  ")
+		if err != nil {
+			writeError(w, err, "failed to process respond content", http.StatusInternalServerError)
+			return
+		}
+		resp = string(respBytes)
+		contentType = "application/json; charset=utf-8"
+	case ContentTypeHTML:
+		filename := filepath.Base(h.Template)
+		tpl, err := template.New(filename).ParseFiles(h.Template)
+		if err != nil {
+			writeError(w, err, "failed to parse template files", http.StatusInternalServerError)
+			return
+		}
+		err = tpl.Execute(w, h.Response)
+		if err != nil {
+			writeError(w, err, "failed to execute template", http.StatusInternalServerError)
+			return
+		}
+		return
+	default:
+		panic("unknown content-type")
+	}
+
+	contentLength := strconv.FormatInt(int64(len(resp)), 10)
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Length", contentLength)
+	w.WriteHeader(h.Status)
+	w.Write([]byte(resp))
+}
+
+func writeError(w http.ResponseWriter, internalErr error, httpErr string, status int) {
+	if internalErr != nil {
 		log.Printf("[ERROR] %v: %v\n", httpErr, internalErr)
 	}
 	http.Error(w, httpErr, status)
