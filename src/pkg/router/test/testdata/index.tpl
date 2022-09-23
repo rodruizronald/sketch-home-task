@@ -1,0 +1,1 @@
+<!DOCTYPE html><html lang="en"><head></head><body><p>{{ .Canvas }}</p></body></html>

@@ -27,11 +27,12 @@ type testEntry struct {
 	method      string
 	reqContent  interface{}
 	respContent interface{}
+	contentType router.ContentType
 }
 
 func TestRouterPostHandler(t *testing.T) {
 	testPath := "/data"
-	validReqContent := TestData{
+	validJSONReq := TestData{
 		Data:   "gooddata",
 		Length: 8,
 	}
@@ -39,79 +40,79 @@ func TestRouterPostHandler(t *testing.T) {
 	testTable := []testEntry{
 		// Valid test cases
 		{
-			name:        "Test with valid post req",
-			status:      http.StatusCreated,
-			method:      router.MethodPost,
-			uri:         "/data",
-			reqContent:  validReqContent,
-			respContent: nil,
+			name:       "Test with valid post req",
+			status:     http.StatusCreated,
+			method:     http.MethodPost,
+			uri:        "/data",
+			reqContent: validJSONReq,
 		},
 		// Invalid test cases
 		{
 			name:   "Test with unmatching req content",
 			status: http.StatusBadRequest,
 			uri:    "/data",
-			method: router.MethodPost,
+			method: http.MethodPost,
 			reqContent: TestData{
 				Data:   "baddata",
 				Length: 7,
 			},
-			respContent: nil,
 		},
 		{
 			name:   "Test with invalid req content",
 			status: http.StatusBadRequest,
 			uri:    "/data",
-			method: router.MethodPost,
+			method: http.MethodPost,
 			reqContent: TestData{
 				Data:   "112!@$#%ffwr",
 				Length: 3,
 			},
-			respContent: nil,
 		},
 		{
-			name:        "Test with invalid method",
-			status:      http.StatusMethodNotAllowed,
-			uri:         "/data",
-			method:      router.MethodPut,
-			reqContent:  validReqContent,
-			respContent: nil,
+			name:       "Test with invalid method",
+			status:     http.StatusMethodNotAllowed,
+			uri:        "/data",
+			method:     http.MethodPut,
+			reqContent: validJSONReq,
 		},
 		{
-			name:        "Test with invalid uri",
-			status:      http.StatusNotFound,
-			uri:         "/invalid",
-			method:      router.MethodPut,
-			reqContent:  validReqContent,
-			respContent: nil,
+			name:       "Test with invalid uri",
+			status:     http.StatusNotFound,
+			uri:        "/invalid",
+			method:     http.MethodPut,
+			reqContent: validJSONReq,
 		},
 		{
-			name:        "Test with empty body",
-			status:      http.StatusBadRequest,
-			uri:         "/data",
-			method:      router.MethodPost,
-			reqContent:  nil,
-			respContent: nil,
+			name:   "Test with empty body",
+			status: http.StatusBadRequest,
+			uri:    "/data",
+			method: http.MethodPost,
 		},
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator, true)
+	handler := router.NewRouter(validator)
 
 	// Validate data correctness in POST handler
-	handler.POST(testPath, &TestData{}, func(vars map[string]string, body interface{}) (resp interface{}, status int) {
-		if reflect.DeepEqual(validReqContent, reflect.ValueOf(body).Elem().Interface()) {
-			return "ok content", http.StatusCreated
+	handler.POST(testPath, &TestData{}, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
+		resp = new(router.HandlerResponse)
+		resp.ContentType = router.ContentTypeText
+		resp.Response = "bad content"
+		resp.Status = http.StatusBadRequest
+
+		if reflect.DeepEqual(validJSONReq, reflect.ValueOf(req.Body).Elem().Interface()) {
+			resp.Response = "ok content"
+			resp.Status = http.StatusCreated
 		}
-		return "bad content", http.StatusBadRequest
+
+		return
 	})
 
-	runRouterTests(t, testTable, handler, testPath)
+	runRouterTests(t, testTable, handler)
 }
 
 func TestRouterPutHandler(t *testing.T) {
 	testPath := "/data/{data_id:[0-9]+}"
-	validReqContent := TestData{
+	validJSONReq := TestData{
 		Data:   "gooddata",
 		Length: 8,
 	}
@@ -119,125 +120,155 @@ func TestRouterPutHandler(t *testing.T) {
 	testTable := []testEntry{
 		// Valid test cases
 		{
-			name:        "Test with valid put req",
-			status:      http.StatusOK,
-			method:      router.MethodPut,
-			uri:         "/data/25",
-			reqContent:  validReqContent,
-			respContent: nil,
+			name:       "Test with valid put req",
+			status:     http.StatusOK,
+			method:     http.MethodPut,
+			uri:        "/data/25",
+			reqContent: validJSONReq,
 		},
 		// Invalid test cases
 		{
 			name:   "Test with unmatching req content",
 			status: http.StatusBadRequest,
 			uri:    "/data/25",
-			method: router.MethodPut,
+			method: http.MethodPut,
 			reqContent: TestData{
 				Data:   "baddata",
 				Length: 7,
 			},
-			respContent: nil,
 		},
 		{
 			name:   "Test with invalid req content",
 			status: http.StatusBadRequest,
 			uri:    "/data/25",
-			method: router.MethodPut,
+			method: http.MethodPut,
 			reqContent: TestData{
 				Data:   "112!@$#%ffwr",
 				Length: 3,
 			},
-			respContent: nil,
 		},
 		{
-			name:        "Test with invalid method",
-			status:      http.StatusMethodNotAllowed,
-			uri:         "/data/25",
-			method:      router.MethodDelete,
-			reqContent:  validReqContent,
-			respContent: nil,
+			name:       "Test with invalid method",
+			status:     http.StatusMethodNotAllowed,
+			uri:        "/data/25",
+			method:     http.MethodDelete,
+			reqContent: validJSONReq,
 		},
 		{
-			name:        "Test with invalid uri",
-			status:      http.StatusNotFound,
-			uri:         "/data/2a2#",
-			method:      router.MethodPut,
-			reqContent:  validReqContent,
-			respContent: nil,
+			name:       "Test with invalid uri",
+			status:     http.StatusNotFound,
+			uri:        "/data/2a2#",
+			method:     http.MethodPut,
+			reqContent: validJSONReq,
 		},
 		{
-			name:        "Test with empty body",
-			status:      http.StatusBadRequest,
-			uri:         "/data/25",
-			method:      router.MethodPut,
-			reqContent:  nil,
-			respContent: nil,
+			name:   "Test with empty body",
+			status: http.StatusBadRequest,
+			uri:    "/data/25",
+			method: http.MethodPut,
 		},
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator, true)
+	handler := router.NewRouter(validator)
 
 	// Validate data correctness in PUT handler
-	handler.PUT(testPath, &TestData{}, func(vars map[string]string, body interface{}) (resp interface{}, status int) {
-		if reflect.DeepEqual(validReqContent, reflect.ValueOf(body).Elem().Interface()) {
-			return "ok content", http.StatusOK
+	handler.PUT(testPath, &TestData{}, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
+		resp = new(router.HandlerResponse)
+		resp.ContentType = router.ContentTypeText
+		resp.Response = "bad content"
+		resp.Status = http.StatusBadRequest
+
+		if reflect.DeepEqual(validJSONReq, reflect.ValueOf(req.Body).Elem().Interface()) {
+			resp.Response = "ok content"
+			resp.Status = http.StatusOK
 		}
-		return "bad content", http.StatusBadRequest
+
+		return
 	})
 
-	runRouterTests(t, testTable, handler, testPath)
+	runRouterTests(t, testTable, handler)
 }
 
 func TestRouterGetHandler(t *testing.T) {
-	testPath := "/data/{data_id:[0-9]+}"
-	validRespContent := TestData{
-		Data:   "gooddata",
+	testVarsPath := "/data/{data_id:[0-9]+}"
+	testHtmlPath := "/index"
+
+	validJSONResp := TestData{
+		Data:   "testdata",
 		Length: 8,
 	}
+
+	var validHTMLResp string = `<!DOCTYPE html><html lang="en"><head></head><body><p>test-canvas</p></body></html>`
 
 	testTable := []testEntry{
 		// Valid test cases
 		{
-			name:        "Test with valid get req",
+			name:        "Test with valid get json req",
 			status:      http.StatusOK,
-			method:      router.MethodGet,
+			method:      http.MethodGet,
 			uri:         "/data/25",
-			reqContent:  nil,
-			respContent: validRespContent,
+			respContent: validJSONResp,
+			contentType: router.ContentTypeJSON,
+		},
+		{
+			name:        "Test with valid get html req",
+			status:      http.StatusOK,
+			method:      http.MethodGet,
+			uri:         testHtmlPath,
+			respContent: validHTMLResp,
+			contentType: router.ContentTypeHTML,
 		},
 		// Invalid test cases
 		{
-			name:        "Test with invalid method",
-			status:      http.StatusMethodNotAllowed,
-			uri:         "/data/25",
-			method:      router.MethodPost,
-			reqContent:  nil,
-			respContent: validRespContent,
+			name:   "Test with invalid method",
+			status: http.StatusMethodNotAllowed,
+			uri:    "/data/25",
+			method: http.MethodPost,
 		},
 		{
-			name:        "Test with invalid uri",
-			status:      http.StatusNotFound,
-			uri:         "/data/2a2#",
-			method:      router.MethodGet,
-			reqContent:  nil,
-			respContent: validRespContent,
+			name:   "Test with invalid uri",
+			status: http.StatusNotFound,
+			uri:    "/data/2a2#",
+			method: http.MethodGet,
 		},
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator, true)
+	handler := router.NewRouter(validator)
 
 	// Validate data correctness in GET handler
-	handler.GET(testPath, func(vars map[string]string, body interface{}) (resp interface{}, status int) {
-		value, ok := vars["data_id"]
+	handler.GET(testVarsPath, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
+		resp = new(router.HandlerResponse)
+		resp.ContentType = router.ContentTypeText
+		resp.Response = "bad vars"
+		resp.Status = http.StatusBadRequest
+
+		value, ok := req.Vars["data_id"]
 		if ok && value == "25" {
-			return validRespContent, http.StatusOK
+			resp.ContentType = router.ContentTypeJSON
+			resp.Response = validJSONResp
+			resp.Status = http.StatusOK
 		}
-		return "bad vars", http.StatusBadRequest
+
+		return
 	})
 
-	runRouterTests(t, testTable, handler, testPath)
+	handler.GET(testHtmlPath, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
+		resp = new(router.HandlerResponse)
+		resp.ContentType = router.ContentTypeHTML
+		resp.Status = http.StatusOK
+		resp.Template = "testdata/index.tpl"
+		resp.Response = &struct {
+			Canvas string
+		}{
+			"test-canvas",
+		}
+
+		return
+	})
+
+	runRouterTests(t, testTable, handler)
 }
 
 func TestRouterDeleteHandler(t *testing.T) {
@@ -246,48 +277,49 @@ func TestRouterDeleteHandler(t *testing.T) {
 	testTable := []testEntry{
 		// Valid test cases
 		{
-			name:        "Test with valid delete req",
-			status:      http.StatusOK,
-			method:      router.MethodDelete,
-			uri:         "/data/25",
-			reqContent:  nil,
-			respContent: nil,
+			name:   "Test with valid delete req",
+			status: http.StatusOK,
+			method: http.MethodDelete,
+			uri:    "/data/25",
 		},
 		// Invalid test cases
 		{
-			name:        "Test with invalid method",
-			status:      http.StatusMethodNotAllowed,
-			uri:         "/data/25",
-			method:      router.MethodGet,
-			reqContent:  nil,
-			respContent: nil,
+			name:   "Test with invalid method",
+			status: http.StatusMethodNotAllowed,
+			uri:    "/data/25",
+			method: http.MethodGet,
 		},
 		{
-			name:        "Test with invalid uri",
-			status:      http.StatusNotFound,
-			uri:         "/data/2a2#",
-			method:      router.MethodPut,
-			reqContent:  nil,
-			respContent: nil,
+			name:   "Test with invalid uri",
+			status: http.StatusNotFound,
+			uri:    "/data/2a2#",
+			method: http.MethodPut,
 		},
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator, true)
+	handler := router.NewRouter(validator)
 
 	// Validate data correctness in DELETE handler
-	handler.DELETE(testPath, func(vars map[string]string, body interface{}) (resp interface{}, status int) {
-		value, ok := vars["data_id"]
+	handler.DELETE(testPath, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
+		resp = new(router.HandlerResponse)
+		resp.ContentType = router.ContentTypeText
+		resp.Response = "bad vars"
+		resp.Status = http.StatusBadRequest
+
+		value, ok := req.Vars["data_id"]
 		if ok && value == "25" {
-			return "ok vars", http.StatusOK
+			resp.ContentType = router.ContentTypeJSON
+			resp.Status = http.StatusOK
 		}
-		return "bad vars", http.StatusBadRequest
+
+		return
 	})
 
-	runRouterTests(t, testTable, handler, testPath)
+	runRouterTests(t, testTable, handler)
 }
 
-func runRouterTests(t *testing.T, testTable []testEntry, handler http.Handler, testPath string) {
+func runRouterTests(t *testing.T, testTable []testEntry, handler http.Handler) {
 	a := assert.New(t)
 
 	for _, tt := range testTable {
@@ -318,14 +350,23 @@ func runRouterTests(t *testing.T, testTable []testEntry, handler http.Handler, t
 
 				actualRawBody, err := io.ReadAll(resp.Body)
 				a.NoError(err)
+				actualStrBody := string(actualRawBody)
 
-				expectedRawBody, err := json.MarshalIndent(tt.respContent, "", "")
-				a.NoError(err)
+				var expectedStrBody string
+				switch tt.contentType {
+				case router.ContentTypeText:
+					expectedStrBody = tt.respContent.(string)
+				case router.ContentTypeHTML:
+					expectedStrBody = tt.respContent.(string)
+				case router.ContentTypeJSON:
+					expectedRawBody, err := json.MarshalIndent(tt.respContent, "", "")
+					expectedStrBody = string(expectedRawBody)
+					a.NoError(err)
+				default:
+					t.Error("unknown content-type")
+				}
 
-				expected := strings.TrimSpace(string(expectedRawBody))
-				actual := strings.TrimSpace(string(actualRawBody))
-
-				a.NotEqual(expected, actual)
+				a.Equal(strings.ReplaceAll(expectedStrBody, " ", ""), strings.ReplaceAll(actualStrBody, " ", ""))
 			}
 		})
 	}
