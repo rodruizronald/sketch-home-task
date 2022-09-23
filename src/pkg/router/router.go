@@ -83,7 +83,7 @@ func (r *Router) DELETE(path string, handler HandlerFunc) {
 	r.handle(http.MethodDelete, path, nil, handler)
 }
 
-// ----------------------- Request Router ----------------------- //
+// ----------------------- Router Request Handler ----------------------- //
 
 func (r *Router) handle(method string, path string, body interface{}, handler HandlerFunc) {
 	r.muxRouter.HandleFunc(path, func(w http.ResponseWriter, req *http.Request) {
@@ -123,7 +123,7 @@ func (r *Router) handle(method string, path string, body interface{}, handler Ha
 	}).Methods(method)
 }
 
-// ----------------------- Response Writer ----------------------- //
+// ----------------------- Router Response Writer ----------------------- //
 
 func (h *HandlerResponse) writeResponse(w http.ResponseWriter) {
 	var resp string
