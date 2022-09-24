@@ -17,8 +17,9 @@ import (
 
 type Router struct {
 	http.Handler
-	muxRouter *mux.Router
-	validator *validator.Validate
+	muxRouter    *mux.Router
+	validator    *validator.Validate
+	templatesDir string
 }
 
 type HandlerRequest struct {
@@ -31,7 +32,21 @@ type HandlerResponse struct {
 	Response    interface{}
 	ContentType ContentType
 	Status      int
-	Template    string
+	// Name of the template file to execute
+	Template string
+}
+
+func (h *HandlerResponse) SetText(resp string, status int) {
+	h.Response = resp
+	h.ContentType = ContentTypeText
+	h.Status = status
+}
+
+func (h *HandlerResponse) SetHTML(resp interface{}, template string, status int) {
+	h.Response = resp
+	h.Template = template
+	h.ContentType = ContentTypeHTML
+	h.Status = status
 }
 
 type HandlerFunc func(req *HandlerRequest) (resp *HandlerResponse)
@@ -44,7 +59,7 @@ const (
 	ContentTypeJSON
 )
 
-func NewRouter(validator *validator.Validate) (r *Router) {
+func NewRouter(validator *validator.Validate, templatesDir string) (r *Router) {
 	muxRouter := mux.NewRouter()
 	muxSubrouter := muxRouter.Methods(
 		http.MethodPost,
@@ -53,9 +68,10 @@ func NewRouter(validator *validator.Validate) (r *Router) {
 		http.MethodDelete).Subrouter()
 
 	return &Router{
-		Handler:   muxRouter,
-		muxRouter: muxSubrouter,
-		validator: validator,
+		Handler:      muxRouter,
+		muxRouter:    muxSubrouter,
+		validator:    validator,
+		templatesDir: templatesDir,
 	}
 }
 
@@ -119,13 +135,13 @@ func (r *Router) handle(method string, path string, body interface{}, handler Ha
 			Body:    body,
 		}
 
-		handler(handlerReq).writeResponse(w)
+		handler(handlerReq).writeResponse(w, r.templatesDir)
 	}).Methods(method)
 }
 
 // ----------------------- Router Response Writer ----------------------- //
 
-func (h *HandlerResponse) writeResponse(w http.ResponseWriter) {
+func (h *HandlerResponse) writeResponse(w http.ResponseWriter, templatesDir string) {
 	var resp string
 	var contentType string
 
@@ -142,12 +158,13 @@ func (h *HandlerResponse) writeResponse(w http.ResponseWriter) {
 		resp = string(respBytes)
 		contentType = "application/json; charset=utf-8"
 	case ContentTypeHTML:
-		filename := filepath.Base(h.Template)
-		tpl, err := template.New(filename).ParseFiles(h.Template)
+		templatePath := filepath.Join(templatesDir, h.Template)
+		tpl, err := template.New(h.Template).ParseFiles(templatePath)
 		if err != nil {
 			writeError(w, err, "failed to parse template files", http.StatusInternalServerError)
 			return
 		}
+		w.WriteHeader(h.Status)
 		err = tpl.Execute(w, h.Response)
 		if err != nil {
 			writeError(w, err, "failed to execute template", http.StatusInternalServerError)
