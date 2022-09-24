@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  app-service:
+    depends_on: 
+      - postgres-service
+    build:
+      context: . 
+      dockerfile: docker/deploy/Dockerfile
+    container_name: app-container
+    hostname: app
+    ports:
+      - 3000:3000
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DATABASE: postgres
+      TEMPLATES_DIRECTORY: ./src/templates
+      SERVER_PORT: 3000
+    restart: unless-stopped
+
+  postgres-service:
+    image: postgres:14
+    container_name: postgres-container
+    hostname: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: root
+    volumes:
+      - ./docker/postgres/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+    restart: unless-stopped
