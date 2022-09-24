@@ -76,7 +76,7 @@ func DrawingModelValidation(sl validator.StructLevel) {
 func CanvasModelValidation(sl validator.StructLevel) {
 	if canvas, ok := sl.Current().Interface().(CanvasModel); ok {
 		// Validate canvas name max. length
-		if len(canvas.Name) > 0 && len(canvas.Name) <= CanvasMaxNameSize {
+		if len(canvas.Name) == 0 && len(canvas.Name) > CanvasMaxNameSize {
 			tag := fmt.Sprintf("canvas name max. size %d exceeded", CanvasMaxNameSize)
 			sl.ReportError(canvas, "Name", "Name", tag, "")
 		}
