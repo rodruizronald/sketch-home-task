@@ -2,6 +2,7 @@ package illustrator
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -10,9 +11,9 @@ import (
 type CanvasStorage interface {
 	Close() (err error)
 	FindByName(ctx context.Context, name string) (canvas *CanvasModel, err error)
-	Create(ctx context.Context, canvas *CanvasModel) (err error)
-	Update(ctx context.Context, canvas *CanvasModel) (err error)
-	Delete(ctx context.Context, name string) (err error)
+	Create(ctx context.Context, canvas *CanvasModel) (res sql.Result, err error)
+	Update(ctx context.Context, canvas *CanvasModel) (res sql.Result, err error)
+	Delete(ctx context.Context, name string) (res sql.Result, err error)
 }
 
 type CanvasModel struct {

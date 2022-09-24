@@ -40,35 +40,35 @@ func (s *Storage) FindByName(ctx context.Context, name string) (canvas *illustra
 	return
 }
 
-func (s *Storage) Create(ctx context.Context, canvas *illustrator.CanvasModel) (err error) {
+func (s *Storage) Create(ctx context.Context, canvas *illustrator.CanvasModel) (res sql.Result, err error) {
 	stmt, err := s.PrepareContext(ctx, "INSERT INTO canvas (name, width, height, drawings) VALUES ($1, $2, $3, $4)")
 	if err != nil {
 		return
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, canvas.Name, canvas.Width, canvas.Height, canvas.Drawings)
+	res, err = stmt.ExecContext(ctx, canvas.Name, canvas.Width, canvas.Height, canvas.Drawings)
 	return
 }
 
-func (s *Storage) Update(ctx context.Context, canvas *illustrator.CanvasModel) (err error) {
+func (s *Storage) Update(ctx context.Context, canvas *illustrator.CanvasModel) (res sql.Result, err error) {
 	stmt, err := s.PrepareContext(ctx, "UPDATE canvas SET width = $1, height = $2, drawings = $3 WHERE name = $4")
 	if err != nil {
 		return
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, canvas.Width, canvas.Height, canvas.Drawings, canvas.Name)
+	res, err = stmt.ExecContext(ctx, canvas.Width, canvas.Height, canvas.Drawings, canvas.Name)
 	return
 }
 
-func (s *Storage) Delete(ctx context.Context, name string) (err error) {
+func (s *Storage) Delete(ctx context.Context, name string) (res sql.Result, err error) {
 	stmt, err := s.PrepareContext(ctx, "DELETE FROM canvas WHERE name = $1")
 	if err != nil {
 		return
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, name)
+	res, err = stmt.ExecContext(ctx, name)
 	return
 }
