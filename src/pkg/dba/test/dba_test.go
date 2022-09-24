@@ -14,6 +14,10 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+const (
+	rowsAffected int64 = 1
+)
+
 type MockStorageSuite struct {
 	suite.Suite
 	storage dba.Storage
@@ -88,8 +92,13 @@ func (s *StorageCreateTestSuite) TestStorageCreate() {
 	prep := s.mock.ExpectPrepare(query)
 	prep.ExpectExec().WithArgs(s.model.Name, s.model.Width, s.model.Height, s.model.Drawings).WillReturnResult(sqlmock.NewResult(0, 1))
 
-	err := s.storage.Create(context.Background(), &s.model)
+	res, err := s.storage.Create(context.Background(), &s.model)
 	s.NoError(err)
+
+	count, err := res.RowsAffected()
+	s.NoError(err)
+
+	s.Equal(count, rowsAffected)
 }
 
 // ----------------- UPDATE TESTS -----------------
@@ -107,8 +116,13 @@ func (s *StorageUpdateTestSuite) TestStorageUpdate() {
 	prep := s.mock.ExpectPrepare(query)
 	prep.ExpectExec().WithArgs(s.model.Width, s.model.Height, s.model.Drawings, s.model.Name).WillReturnResult(sqlmock.NewResult(0, 1))
 
-	err := s.storage.Update(context.Background(), &s.model)
+	res, err := s.storage.Update(context.Background(), &s.model)
 	s.NoError(err)
+
+	count, err := res.RowsAffected()
+	s.NoError(err)
+
+	s.Equal(count, rowsAffected)
 }
 
 // ----------------- DELETE TESTS -----------------
@@ -126,6 +140,11 @@ func (s *StorageDeleteTestSuite) TestStorageDelete() {
 	prep := s.mock.ExpectPrepare(query)
 	prep.ExpectExec().WithArgs(s.model.Name).WillReturnResult(sqlmock.NewResult(0, 1))
 
-	err := s.storage.Delete(context.Background(), s.model.Name)
+	res, err := s.storage.Delete(context.Background(), s.model.Name)
 	s.NoError(err)
+
+	count, err := res.RowsAffected()
+	s.NoError(err)
+
+	s.Equal(count, rowsAffected)
 }
