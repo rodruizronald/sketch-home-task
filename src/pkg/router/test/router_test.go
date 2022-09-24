@@ -15,6 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	templatesDir string = "./testdata/templates"
+)
+
 type TestData struct {
 	Data   string `json:"data" validate:"alpha"`
 	Length int    `json:"length" validate:"gt=5"`
@@ -90,7 +94,7 @@ func TestRouterPostHandler(t *testing.T) {
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator)
+	handler := router.NewRouter(validator, templatesDir)
 
 	// Validate data correctness in POST handler
 	handler.POST(testPath, &TestData{}, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
@@ -170,7 +174,7 @@ func TestRouterPutHandler(t *testing.T) {
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator)
+	handler := router.NewRouter(validator, templatesDir)
 
 	// Validate data correctness in PUT handler
 	handler.PUT(testPath, &TestData{}, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
@@ -235,7 +239,7 @@ func TestRouterGetHandler(t *testing.T) {
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator)
+	handler := router.NewRouter(validator, templatesDir)
 
 	// Validate data correctness in GET handler
 	handler.GET(testVarsPath, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
@@ -258,7 +262,7 @@ func TestRouterGetHandler(t *testing.T) {
 		resp = new(router.HandlerResponse)
 		resp.ContentType = router.ContentTypeHTML
 		resp.Status = http.StatusOK
-		resp.Template = "testdata/index.tpl"
+		resp.Template = "index.html"
 		resp.Response = &struct {
 			Canvas string
 		}{
@@ -298,7 +302,7 @@ func TestRouterDeleteHandler(t *testing.T) {
 	}
 
 	validator := validator.New()
-	handler := router.NewRouter(validator)
+	handler := router.NewRouter(validator, templatesDir)
 
 	// Validate data correctness in DELETE handler
 	handler.DELETE(testPath, func(req *router.HandlerRequest) (resp *router.HandlerResponse) {
