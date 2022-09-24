@@ -1,19 +1,21 @@
 package illustrator
 
-import "github.com/go-playground/validator"
+import (
+	"github.com/go-playground/validator"
+)
 
-func (c *CanvasModel) GetStringCanvas(emptyFiller rune, v *validator.Validate) (result string, err error) {
-	if v != nil {
-		if err = v.Struct(c); err != nil {
+func (c *CanvasModel) GetString(emptyFiller rune, newLine string, validator *validator.Validate) (str string, err error) {
+	if validator != nil {
+		if err = validator.Struct(c); err != nil {
 			return
 		}
 	}
 
-	canvasRunes := make([][]rune, c.Height)
-	for i := range canvasRunes {
-		canvasRunes[i] = make([]rune, c.Width)
-		for j := range canvasRunes[i] {
-			canvasRunes[i][j] = emptyFiller
+	runes := make([][]rune, c.Height)
+	for i := range runes {
+		runes[i] = make([]rune, c.Width)
+		for j := range runes[i] {
+			runes[i][j] = emptyFiller
 		}
 	}
 
@@ -49,16 +51,16 @@ func (c *CanvasModel) GetStringCanvas(emptyFiller rune, v *validator.Validate) (
 					continue
 				}
 
-				canvasRunes[i][j] = char
+				runes[i][j] = char
 			}
 		}
 	}
 
-	for i := range canvasRunes {
+	for i := range runes {
 		if i > 0 {
-			result += "\n"
+			str += newLine
 		}
-		result += string(canvasRunes[i])
+		str += string(runes[i])
 	}
 
 	return
